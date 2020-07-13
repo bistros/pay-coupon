@@ -4,7 +4,10 @@
    10개의 쿠폰을 생성하여 데이터베이스에 저장 
 ```
    * operator 서비스에서 랜덤문자를 가지는 쿠폰을 생성한다. 
-   쿠폰은 16자리 (4-4-4-4)로 구성되어 있고 Function 을 상속한 CouponPrefixGenerator, DashAppender, ValidCodeGenerator 를 체이닝하여 생성된다.
+   쿠폰은 16자리 (4-4-4-4)로 구성되어 있고 Function 을 상속한 
+   [CouponPrefixGenerator](src/main/java/com/bistros/pay/coupon/operator/application/supported/CouponPrefixGenerator.java), 
+   [DashAppender](src/main/java/com/bistros/pay/coupon/operator/application/supported/DashAppender.java), 
+   [ValidCodeGenerator](src/main/java/com/bistros/pay/coupon/operator/application/supported/ValidCodeGenerator.java) 를 체이닝하여 생성된다.
 
       - 1번 자리 : 쿠폰발급기의 구분자
       - 2번 ~ 14번자리 : 0-9A-Z 를 활용하여 랜덤 문자
@@ -28,7 +31,7 @@
   * 문제에 따르면 요청이 올 때 쿠폰을 생성하는 것이 아닌 '쿠폰을 생성해놓고 사용자를 할당'하는 방식이다. 이러면 순간적인 쿠폰 발급 요청시 '발급'에 따른 부하는 없지만 '쿠폰을 할당하는 것에 대한 고민'이 필요하다.
 
   미사용 쿠폰에서 하나의 쿠폰을 할당 받기 위해서는 `UPDATE * SET OWNER='ID' WHERE (select * from WHERE STATE = UNASSIGN limit 1) `
-   이처럼 '미사용 쿠폰을 가져온다 -> UPDATE 한다' 처럼 2 Phase 가 필요로 하고, 중복 할당을 막기 위해 트랜잭션등을 사용해야 한다.  이 보다는 '할당'을 위해서 Queue 를 사용하는 것을 제안했다.
+   이처럼 'SELECT 미사용 쿠폰 -> UPDATE 쿠폰 발급 사용자' 처럼 2 Phase 가 필요로 하고, 중복 할당을 막기 위해 트랜잭션등을 사용해야 한다.  이 보다는 '할당'을 위해서 Queue 를 사용하는 것을 제안했다.
 
   미사용 쿠폰을 큐에 올려 놓고 -> 할당 하고 -> 정보를 DB에 동기화한다.
 
@@ -50,12 +53,7 @@
       FailedUseCouponException   : 이미 사용된 쿠폰
       NotExistCouponException    : 존재 하지 않는 쿠폰
 ```
-1. 예외처리
-    - 이미 사용된 쿠폰
-    - 존재하지 않는 쿠폰
-    - 쿠폰은 존재하지만 쿠폰 사용 요청자랑, 쿠폰 소유자랑 다른 경우
-      
-      해당 예외 케이스는 '다른 사람의 쿠폰 사용자' 라고 표시할 수도 있지만 단순히 '사용자가 사용할 수 있는 쿠폰이 아니라는 표현이 더 적절한듯하여 NotExist 로 처리함'
+  * 해당 예외 케이스는 '다른 사람의 쿠폰 사용자' 라고 표시할 수도 있지만 '사용자 쿠폰이 아니지만 존재하는 쿠폰'을 표시하는 것 자체가 좋은 것 같지는 않다고 생각하여서 NotExist로 예외를 표현 함'
 
 ## 5. 쿠폰 취소
 ```
